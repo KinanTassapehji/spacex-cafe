@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: spacex-gaming-cafe
+    runtime: node
+    buildCommand: npm run install-all && cd client && npm install && cd .. && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 22
+    plan: free

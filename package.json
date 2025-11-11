@@ -1,0 +1,31 @@
+{
+  "name": "spacex-gaming-cafe",
+  "version": "1.0.0",
+  "description": "SpaceX Gaming Cafe Management System",
+  "scripts": {
+    "install-client": "cd client && npm install",
+    "install-server": "cd server && npm install",
+    "install-all": "npm run install-client && npm run install-server",
+    "build": "cd client && npm install && npm run build",
+    "start": "cd server && npm start",
+    "dev-server": "cd server && npm run dev",
+    "dev-client": "cd client && npm start",
+    "postbuild": "npm run install-all && npm run build",
+    "vercel-deploy": "vercel --prod",
+    "railway-deploy": "railway up",
+    "docker-build": "cd server && docker build -t spacex-gaming-cafe .",
+    "docker-run": "cd server && docker run -p 5000:5000 spacex-gaming-cafe"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
+  },
+  "keywords": [
+    "gaming",
+    "cafe",
+    "management",
+    "pos"
+  ],
+  "author": "",
+  "license": "ISC"
+}
