@@ -104,13 +104,17 @@ SpaceX/
 │   │   ├── App.js            # Main application
 │   │   └── index.js          # Entry point
 │   ├── public/
-│   └── build/                # Production build ✅
+│   ├── Dockerfile            # Multi-stage build for production assets
+│   └── nginx.conf            # SPA-friendly Nginx config used in Docker image
 ├── server/                    # Node.js backend
 │   ├── models/               # MongoDB models
 │   ├── routes/               # API routes
 │   ├── index.js              # Server entry
-│   └── .env.example          # Environment template
+│   ├── .env.example          # Environment template
+│   └── .env.prod.example     # Production template for Docker deployments
+├── docker-compose.production.yml # Docker Compose file for Ubuntu self-hosting
 ├── render.yaml               # Render deployment config
+├── DEPLOYMENT_UBUNTU_NGINX_DOCKER.md # Ubuntu + Docker + Nginx guide
 ├── DEPLOYMENT_SUMMARY.md     # 📖 START HERE
 ├── RENDER_DEPLOYMENT.md      # Render.com guide
 ├── DEPLOYMENT_OPTIONS.md     # All deployment options
