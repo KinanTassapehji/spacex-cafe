@@ -39,8 +39,22 @@ router.post('/sessions', async (req, res) => {
 });
 
 router.get('/sessions', async (req, res) => {
-    const sessions = await Session.find();
+    let query = {};
+    if (req.query.active === 'true') {
+        query.endTime = null;
+    }
+    const sessions = await Session.find(query);
     res.json(sessions);
+});
+
+router.patch('/sessions/:id', async (req, res) => {
+    try {
+        const session = await Session.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!session) return res.status(404).json({ error: 'Session not found' });
+        res.json(session);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
 });
 
 // Auth: Register
