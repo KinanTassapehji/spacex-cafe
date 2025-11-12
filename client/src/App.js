@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 // Backend API base URL
-const API_BASE = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000/api';
+const API_BASE = process.env.REACT_APP_API_BASE || (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000/api');
 
 const initialDevices = [
     { type: 'PS5', name: 'PS5 #1', img: 'https://img.icons8.com/?size=100&id=rseRGUUHZGNU&format=png&color=ffffff', rate: 18000 },
@@ -184,6 +184,23 @@ function App() {
         }
     }, [authToken, activeSessions.length]);
 
+    // Fetch active sessions on load
+    useEffect(() => {
+        if (authToken) {
+            axios.get(`${API_BASE}/sessions?active=true`).then(res => {
+                const active = res.data.map(sess => ({
+                    _id: sess._id,
+                    device: devices.find(d => d.name === sess.deviceType) || { name: sess.deviceType, type: 'Unknown', img: 'https://img.icons8.com/?size=100&id=buti0ig4reqf&format=png&color=ffffff', rate: 10000 },
+                    start: new Date(sess.startTime).getTime(),
+                    rate: devices.find(d => d.name === sess.deviceType)?.rate || rate,
+                    snacks: [] // Snacks not persisted
+                }));
+                setActiveSessions(active);
+                localStorage.setItem('activeSessions', JSON.stringify(active));
+            }).catch(err => console.error('Failed to fetch active sessions:', err));
+        }
+    }, [authToken, devices, rate]);
+
     // Auth login handler
     const handleAuthLogin = async () => {
         setLoginError("");
@@ -337,16 +354,27 @@ function App() {
     };
 
 
-    const handleStartSession = (dev) => {
-        const deviceRate = devices.find(d => d.name === dev.name)?.rate || rate;
-        const newSessions = [...activeSessions, {
-            device: dev,
-            start: Date.now(),
-            rate: deviceRate,
-            snacks: []
-        }];
-        setActiveSessions(newSessions);
-        localStorage.setItem('activeSessions', JSON.stringify(newSessions));
+    const handleStartSession = async (dev) => {
+        try {
+            const res = await axios.post(`${API_BASE}/sessions`, {
+                deviceType: dev.name,
+                startTime: new Date()
+            });
+            const deviceRate = devices.find(d => d.name === dev.name)?.rate || rate;
+            const newSession = {
+                _id: res.data._id,
+                device: dev,
+                start: Date.now(),
+                rate: deviceRate,
+                snacks: []
+            };
+            const newSessions = [...activeSessions, newSession];
+            setActiveSessions(newSessions);
+            localStorage.setItem('activeSessions', JSON.stringify(newSessions));
+        } catch (err) {
+            console.error('Failed to start session:', err);
+            alert('Failed to start session. Please check your connection.');
+        }
     };
 
     const handleAddSnack = (idx) => {
@@ -399,45 +427,49 @@ function App() {
         const end = Date.now();
         const durationMin = Math.round((end - session.start) / 60000);
         const charge = ((durationMin / 60) * session.rate).toFixed(2);
-        await axios.post(`${API_BASE}/sessions`, {
-            deviceType: session.device.name,
-            startTime: new Date(session.start),
-            endTime: new Date(end),
-            duration: durationMin,
-            charge: Number(charge)
-        });
-        const sessionSale = {
-            category: session.device.type,
-            item: session.device.name,
-            amount: 1,
-            price: Number(charge)
-        };
-        const allSales = [sessionSale, ...session.snacks];
-        for (const sale of allSales) {
-            await axios.post(`${API_BASE}/sales`, sale);
-            if (sale.category === 'Snack') {
-                // Find the inventory item and update its stock
-                const inventoryItem = inventory.find(inv => inv.item === sale.item);
-                if (inventoryItem) {
-                    await axios.patch(`${API_BASE}/inventory/${inventoryItem._id}`, {
-                        stock: -sale.amount
-                    });
+        try {
+            await axios.patch(`${API_BASE}/sessions/${session._id}`, {
+                endTime: new Date(end),
+                duration: durationMin,
+                charge: Number(charge)
+            });
+            const sessionSale = {
+                category: session.device.type,
+                item: session.device.name,
+                amount: 1,
+                price: Number(charge)
+            };
+            const allSales = [sessionSale, ...session.snacks];
+            for (const sale of allSales) {
+                await axios.post(`${API_BASE}/sales`, sale);
+                if (sale.category === 'Snack') {
+                    // Find the inventory item and update its stock
+                    const inventoryItem = inventory.find(inv => inv.item === sale.item);
+                    if (inventoryItem) {
+                        await axios.patch(`${API_BASE}/inventory/${inventoryItem._id}`, {
+                            stock: -sale.amount
+                        });
+                    }
                 }
             }
+            // Refresh inventory after stock update
+            const updatedInventory = await axios.get(`${API_BASE}/inventory`);
+            setInventory(updatedInventory.data);
+            setSaleSummary({
+                items: allSales,
+                total: allSales.reduce((sum, s) => sum + s.price, 0),
+                device: session.device.name
+            });
+            // Remove session from active
+            const updatedSessions = activeSessions.filter((_, i) => i !== idx);
+            setActiveSessions(updatedSessions);
+            localStorage.setItem('activeSessions', JSON.stringify(updatedSessions));
+        } catch (err) {
+            console.error('Failed to end session:', err);
+            alert('Failed to end session. Please try again.');
+        } finally {
+            setLoading(false);
         }
-        // Refresh inventory after stock update
-        const updatedInventory = await axios.get(`${API_BASE}/inventory`);
-        setInventory(updatedInventory.data);
-        setSaleSummary({
-            items: allSales,
-            total: allSales.reduce((sum, s) => sum + s.price, 0),
-            device: session.device.name
-        });
-        // Remove session from active
-        const updatedSessions = activeSessions.filter((_, i) => i !== idx);
-        setActiveSessions(updatedSessions);
-        localStorage.setItem('activeSessions', JSON.stringify(updatedSessions));
-        setLoading(false);
     };
 
     // Monitoring dashboard
