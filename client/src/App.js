@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 // Backend API base URL
-const API_BASE = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000/api';
+const API_BASE = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5050/api';
 
 const initialDevices = [
     { type: 'PS5', name: 'PS5 #1', img: 'https://img.icons8.com/?size=100&id=rseRGUUHZGNU&format=png&color=ffffff', rate: 18000 },

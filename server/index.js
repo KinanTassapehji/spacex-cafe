@@ -32,10 +32,12 @@ console.log('🔗 Connecting to MongoDB URI:', uri);
 
 // Connect to MongoDB (Mongoose handles connection pooling automatically)
 mongoose.connect(uri, {
-    serverSelectionTimeoutMS: 30000, // Increase timeout to 30 seconds
-    socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
-    maxPoolSize: 10, // Maintain up to 10 socket connections
-    family: 4 // Use IPv4, skip trying IPv6
+    ssl: true,
+    tlsAllowInvalidCertificates: false,
+    serverSelectionTimeoutMS: 30000,
+    socketTimeoutMS: 45000,
+    maxPoolSize: 10,
+    family: 4
 })
     .then(() => console.log('✅ Connected to MongoDB successfully'))
     .catch(err => console.error('❌ MongoDB connection error:', err));
@@ -59,13 +61,14 @@ app.use('/api', apiRoutes);
 
 // Serve frontend in production
 if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '../client/build')));
+    app.use(express.static(path.join(__dirname, 'client-build')));
     app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
+        //res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
+        res.sendFile(path.join(__dirname, 'client-build', 'index.html'));
     });
 } else {
     app.get('/', (req, res) => res.send('Sales Management System API - Development Mode'));
 }
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5050;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
