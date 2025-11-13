@@ -47,7 +47,10 @@ function App() {
         const saved = localStorage.getItem('activeSessions');
         return saved ? JSON.parse(saved) : [];
     });
-    const [monitoring, setMonitoring] = useState(() => localStorage.getItem('monitoring') === 'true');
+    const [monitoring, setMonitoring] = useState(() => {
+        const saved = localStorage.getItem('monitoring');
+        return saved !== null ? saved === 'true' : true;
+    });
     const [snack, setSnack] = useState("");
     const [snackQty, setSnackQty] = useState(1);
     const [snackPrice, setSnackPrice] = useState(10);
